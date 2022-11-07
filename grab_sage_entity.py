@@ -228,7 +228,7 @@ def initialize_datalake_client(storage_account_name, storage_account_key, file_s
         "https", storage_account_name), credential=storage_account_key)
 
     if service_client:
-        print("Successfully connected to Azure Data Lake")
+        logger.info(f"Successfully connected to {storage_account_name} Azure Data Lake")
 
         # create the filesystem
         filesystem_client = service_client.get_file_system_client(file_system=file_system)
