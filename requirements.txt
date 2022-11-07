@@ -1,0 +1,6 @@
+pytest
+pylint
+click
+requests
+azure-storage-file-datalake
+pandas
