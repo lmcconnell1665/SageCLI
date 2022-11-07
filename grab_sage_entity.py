@@ -36,7 +36,6 @@ class SageIntacct:
     sender_password: str = os.getenv("SAGE_SENDER_PASSWORD")
     url: str = "https://api.intacct.com/ia/xml/xmlgw.phtml"
 
-
 @dataclass
 class AzureDataLake:
     '''Class representing a filesystem client connection credentials to ADLS Gen2 stored in environment variables'''
@@ -175,11 +174,13 @@ def parse_session_id(response_object):
     for child in root.iter('sessionid'):
         session = (child.text)
 
-        print(child.text)
+    for child in root.item('sessiontimeout'):
+        timeout = (child.text)
 
-    logger.info(f'The sesion id will be {session}')
 
-    return session
+    logger.info(f'The sesion id will be {session} which times out at {timeout}')
+
+    return session, timeout
 
 
 def get_new_sesison(SageSesh):
@@ -187,9 +188,11 @@ def get_new_sesison(SageSesh):
 
     request_doc_string = generate_xml_doc(SageSesh, 'Auth')
     response = send_request(request_doc_string, SageSesh)
-    session_id = parse_session_id(response)
+    result = parse_session_id(response)
+    session_id = result[0]
+    timeout = result[1]
 
-    return session_id
+    return session_id, timeout
 
 
 def get_entity(SageSesh, session_id: str, entity: str, query: str):
@@ -288,7 +291,7 @@ def check_for_next_entity(response_to_check):
 
         result = SageResult(entity=a.get("listtype"), result_id=a.get("resultId"), this_result_count=int(a.get("count")), number_remaining=int(a.get("numremaining")), total_count=int(a.get("totalcount")))
     
-        logger.info(f"There are {result.number_remaining} records remaining for {result.entity}")
+        logger.info(f"There are {result.number_remaining} records remaining for {result.entity}. Continuing...")
         return result
 
 
@@ -298,6 +301,8 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
     SageSesh = SageIntacct()
     AzureSesh = AzureDataLake()
 
+    logger.info(f"The {SageSesh.sender_id} sender_id is being used to save to the {AzureSesh.storage_account_name} storage account.")
+
     if SageSesh.sender_id is None:
         logger.warning(f"Sage session is missing environmental variables.")
 
@@ -305,7 +310,9 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
 
     logger.info(f'Starting function at {long_run_start_time} for {entity_name}.')
 
-    session_id = get_new_sesison(SageSesh)
+    sesh = get_new_sesison(SageSesh)
+    session_id = sesh[0]
+    timeout = sesh[1]
 
     entity = get_entity(SageSesh, session_id, entity_name, query)
     save_entity(AzureSesh, f'Sage_Intacct/data_download/{entity_name}/{file_name_prefix}_{entity_name}_0.xml', entity)
@@ -313,6 +320,13 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
 
     counter = 1
     while next_entity.number_remaining != 0:
+
+        if timeout <= dt.now():
+            logging.info(f'Previous token expiring. Getting a fresh session token.')
+            sesh = get_new_sesison(SageSesh)
+            session_id = sesh[0]
+            timeout = sesh[1]
+
         next_entity_page = get_next_page(SageSesh, session_id, next_entity.result_id)
         save_entity(AzureSesh, f'Sage_Intacct/data_download/{entity_name}/{file_name_prefix}_{entity_name}_{counter}.xml', next_entity_page)
 
