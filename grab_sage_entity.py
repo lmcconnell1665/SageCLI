@@ -19,6 +19,7 @@ logger.addHandler(fh)
 from xml.dom.minidom import Document, parseString
 from dataclasses import dataclass
 from datetime import datetime as dt
+from datetime import timezone as tz
 import time
 import os
 import requests
@@ -155,7 +156,11 @@ def send_request(payload: str, SageSesh):
     '''Sends an xml request to the sage intacct api endpoint'''
 
     header = {'Content-type': 'application/xml'}
-    response = requests.post(SageSesh.url, data=payload, headers=header)
+    try:
+        response = requests.post(SageSesh.url, data=payload, headers=header)
+    except ConnectionResetError:
+        logger.warning(f"The connection broke during the request. Trying the last request 1 more again.")
+        response - requests.post(SageSesh.url, data=payload, headers=header)
 
     # response_text = response.text
     # parsed_xml = parseString(response_text)
@@ -174,7 +179,7 @@ def parse_session_id(response_object):
     for child in root.iter('sessionid'):
         session = (child.text)
 
-    for child in root.item('sessiontimeout'):
+    for child in root.iter('sessiontimeout'):
         timeout = (child.text)
 
 
@@ -190,7 +195,12 @@ def get_new_sesison(SageSesh):
     response = send_request(request_doc_string, SageSesh)
     result = parse_session_id(response)
     session_id = result[0]
-    timeout = result[1]
+
+    time_as_string = result[1]
+
+    if ":" == time_as_string[-3:-2]:
+        time_as_string = time_as_string[:-3]+time_as_string[-2:]
+        timeout = dt.strptime(time_as_string, "%Y-%m-%dT%H:%M:%S%z")
 
     return session_id, timeout
 
@@ -321,7 +331,8 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
     counter = 1
     while next_entity.number_remaining != 0:
 
-        if timeout <= dt.now():
+        current_time = dt.now().replace(tzinfo=tz.utc)
+        if timeout <= current_time:
             logging.info(f'Previous token expiring. Getting a fresh session token.')
             sesh = get_new_sesison(SageSesh)
             session_id = sesh[0]
@@ -342,4 +353,4 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
 
 if __name__ == '__main__':
     # main()
-    main('CUSTOMER', 'WHENMODIFIED >= 06/01/2022 AND WHENMODIFIED <= 06/10/2022')
+    main('CUSTOMER', 'WHENMODIFIED >= 06/01/2022 AND WHENMODIFIED <= 07/10/2022')
