@@ -156,12 +156,17 @@ def send_request(payload: str, SageSesh):
     '''Sends an xml request to the sage intacct api endpoint'''
 
     header = {'Content-type': 'application/xml'}
-    try:
-        response = requests.post(SageSesh.url, data=payload, headers=header)
-    except ConnectionResetError:
-        logger.warning(f"The connection broke during the request. Trying the last request 1 more again.")
-        response - requests.post(SageSesh.url, data=payload, headers=header)
-
+    num_tries = 3
+    while True:
+        num_tries -= 1
+        try:
+            response = requests.post(SageSesh.url, data=payload, headers=header)
+            break
+        except ConnectionError:
+            if num_tries == 0:
+                logger.warning(f"The connection broke during the request. Erroring out.")
+                return
+                # response = requests.post(SageSesh.url, data=payload, headers=header)
     # response_text = response.text
     # parsed_xml = parseString(response_text)
     # xml_pretty = parsed_xml.toprettyxml()
