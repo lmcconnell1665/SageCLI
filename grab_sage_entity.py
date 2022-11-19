@@ -125,8 +125,8 @@ def generate_xml_doc(SageSesh, doc_type: str, session_id: str = None, entity: st
             readbyquery = new_xml_doc.createElement('readByQuery')
             function.appendChild(readbyquery)
 
-            object = new_xml_doc.createElement('object')
-            readbyquery.appendChild(object).appendChild(new_xml_doc.createTextNode("" + entity + ""))
+            obj = new_xml_doc.createElement('object')
+            readbyquery.appendChild(obj).appendChild(new_xml_doc.createTextNode("" + entity + ""))
 
             fields = new_xml_doc.createElement('fields')
             readbyquery.appendChild(fields).appendChild(new_xml_doc.createTextNode("" + columns + ""))
@@ -160,11 +160,11 @@ def send_request(payload: str, SageSesh):
     while True:
         num_tries -= 1
         try:
-            response = requests.post(SageSesh.url, data=payload, headers=header)
+            response = requests.post(SageSesh.url, data=payload, headers=header,timeout=600)
             break
         except ConnectionError:
             if num_tries == 0:
-                logger.warning(f"The connection broke during the request. Erroring out.")
+                logger.warning("The connection broke during the request. Erroring out.")
                 return
                 # response = requests.post(SageSesh.url, data=payload, headers=header)
     # response_text = response.text
@@ -319,7 +319,7 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
     logger.info(f"The {SageSesh.sender_id} sender_id is being used to save to the {AzureSesh.storage_account_name} storage account.")
 
     if SageSesh.sender_id is None:
-        logger.warning(f"Sage session is missing environmental variables.")
+        logger.warning("Sage session is missing environmental variables.")
 
     long_run_start_time = dt.now()
 
@@ -338,7 +338,7 @@ def main(entity_name: str, query: str, file_name_prefix: str = 'adhoc'):
 
         current_time = dt.now().replace(tzinfo=tz.utc)
         if timeout <= current_time:
-            logging.info(f'Previous token expiring. Getting a fresh session token.')
+            logging.info('Previous token expiring. Getting a fresh session token.')
             sesh = get_new_sesison(SageSesh)
             session_id = sesh[0]
             timeout = sesh[1]

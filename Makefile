@@ -9,7 +9,6 @@ test:
 	python -m pytest -vv test_function.py
 
 lint:
-	pylint --disable=R,C grab_function.py &&\
-		pylint --disable=R,C clear_function.py
+	pylint --disable=R,C,W1203,W1202,E1101,W0104,E1120 *.py
 
 all: install lint test
