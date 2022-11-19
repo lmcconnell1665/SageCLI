@@ -1,3 +1,5 @@
+[![Build and test project](https://github.com/lmcconnell1665/SageCLI/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/lmcconnell1665/SageCLI/actions/workflows/build-and-test.yml)
+
 # SageCLI
 Quick and dirty CLI for bulk extracting data from Sage Intacct and saving in Azure storage. Save them in a `.env` file for debugging or use `export` from the terminal to declare them (I'm using Ubuntu running in WSL2).
 
