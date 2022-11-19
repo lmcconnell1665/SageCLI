@@ -20,7 +20,7 @@ The following environment variables are required for the tool to work properly:
 | SAGE_SENDER_PASSWORD | API sender password for connecting to Sage Intacct |
 | AZURE_STORAGE_ACCT_NAME | Azure storage account name that you want to save the data in |
 | AZURE_STORAGE_ACCT_KEY | Azure storage account access key (with no prefixes) |
-| AZURE_STORAGE_FILESYSTEM | Azure storage account container you want to save the data in (will create a `Sage_Intacct/data_download` subdirectory in this container ) |
+| AZURE_STORAGE_FILESYSTEM | Azure storage account container you want to save the data in (will create a `Sage_Intacct/data_download` subdirectory in this container) |
 
 # Run Commands
 From the working directory, run `python3 sage_slasher.py --help` to see the list of commands.
